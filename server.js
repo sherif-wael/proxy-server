@@ -1,25 +1,24 @@
 const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const cors = require("cors");
+const url = require("url");
 const app = express();
-
-const regex = /\/cors\?url=.*\?/;
 
 app.use(cors());
 
-// It requires a little bit of modification as the target url is derived from ?url=*
-// So query params cant be read the only query param that will reach the server will be <url>
-// We need to derive the target url through req.query.url.replace(/\?.*/, "")
-// and remove /cors?url=target.com from the path
+// idataworkers_server: https://beta.idataworkers.com/
+// kpibuilder_server: https://demo.dev.ilpapps.com/
 
 app.use("/cors", createProxyMiddleware({
     changeOrigin: true,
     target: "https://beta.idataworkers.com",
     router: req => {
-        return req.query.url.replace(/\?.*/, "");
+        const { host, protocol } = url.parse(req.query.url, true);
+        return `${protocol}//${host}`;
     },
-    pathRewrite: (path, req) => {
-        return path.replace(regex, "?");
+    pathRewrite: (_, req) => {
+        const { path } = url.parse(req.query.url, true);
+        return path;
     }
 }));
 
